@@ -3,14 +3,9 @@ import React from "react";
 type FlagIconProps = {
   src: string;
   alt?: string;
-  className?: string;
 };
 
-const FlagIcon: React.FC<FlagIconProps> = ({
-  src,
-  alt = "Flag",
-  className,
-}) => (
+const FlagIcon: React.FC<FlagIconProps> = ({ src, alt = "Flag" }) => (
   <img
     src={`https://flagcdn.com/w40/${src}.png`}
     alt={alt}

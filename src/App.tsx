@@ -1,6 +1,6 @@
 import "@mantine/core/styles.css";
 import { Card, Group, MantineProvider, Select, Stack } from "@mantine/core";
-import { Button, Popover, useCombobox, Text } from "@mantine/core";
+import { Button, Popover, Text } from "@mantine/core";
 import { theme } from "./theme";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "./hooks/useAuth";
