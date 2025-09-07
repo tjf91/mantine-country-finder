@@ -1,5 +1,5 @@
 import { Input } from "@mantine/core";
-import React, { useState } from "react";
+import React from "react";
 
 interface PhoneNumberInputProps {
   value: string;
@@ -41,30 +41,24 @@ const PhoneNumberInput: React.FC<PhoneNumberInputProps> = ({
     return result;
   }
   let valueToFormat = value.replace(/\D/g, ""); // Remove non-digit characters
+  const group3Len = phone_length - 6;
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let val = e.target.value.replace(/\D/g, ""); // Remove non-digit characters
     if (val.length > phone_length) {
       val = val.slice(0, phone_length);
     }
-    val = formatPhoneNumber(val, phone_length - 6);
+    val = formatPhoneNumber(val, group3Len);
     onChange(val);
   };
-  // Format the input value as (XXX)-XXX-variable
-  console.log(valueToFormat);
-  if (valueToFormat.length > phone_length) {
-    valueToFormat = valueToFormat.slice(0, phone_length);
-  }
-  console.log(valueToFormat);
-  const group3Len = phone_length - 6;
+  //format the phone number you see in the input
   valueToFormat = formatPhoneNumber(valueToFormat, group3Len);
-  console.log(valueToFormat);
   return (
     <Input
       value={valueToFormat}
       onChange={handleInputChange}
       placeholder={placeholder}
-      className="mb-2"
       ref={phoneInputRef}
+      style={{ width: "150px" }}
     />
   );
 };

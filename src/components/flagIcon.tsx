@@ -14,7 +14,7 @@ const FlagIcon: React.FC<FlagIconProps> = ({
   <img
     src={`https://flagcdn.com/w40/${src}.png`}
     alt={alt}
-    className={`border border-black ${className ?? ""}`}
+    style={{ boxShadow: "1px 1px 1px black" }}
   />
 );
 

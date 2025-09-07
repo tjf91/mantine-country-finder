@@ -1,60 +1,68 @@
 import "@mantine/core/styles.css";
-import {
-  Card,
-  Group,
-  Input,
-  MantineProvider,
-  Select,
-  Stack,
-} from "@mantine/core";
-import {
-  Button,
-  Popover,
-  Combobox,
-  useCombobox,
-  Text,
-  NumberInput,
-  Box,
-} from "@mantine/core";
+import { Card, Group, MantineProvider, Select, Stack } from "@mantine/core";
+import { Button, Popover, useCombobox, Text } from "@mantine/core";
 import { theme } from "./theme";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "./hooks/useAuth";
-import { fetchCountries, postCountryCode } from "./services/countries";
+import { fetchCountries } from "./services/countries";
 import FlagIcon from "./components/flagIcon";
 import PhoneNumberInput from "./components/numberFormat";
-export type Country = {
-  id: string;
-  name: string;
-  calling_code: string;
-  phone_length: string;
-  countryCode?: string;
-};
-type CountryMap = Record<string, Country>;
+import { CountryMap, CountrySelectItem } from "./types";
+
 export default function App() {
-  const { token, isAuthenticated, login } = useAuth();
+  const { token, login } = useAuth();
   const [originalCountries, setOriginalCountries] = useState<CountryMap>({});
   const [countries, setCountries] = useState<CountryMap>({});
-
   const [selectedCountry, setSelectedCountry] =
     useState<CountrySelectItem | null>(null);
   const [phoneInput, setPhoneInput] = useState<string>("");
-  const handlePhoneInputChange = (value: string) => {
-    const digits = value.replace(/\D/g, "");
-    console.log("digits", digits);
-    console.log("value", value);
-    setPhoneInput(value);
-  };
-  console.log("phoneInput", phoneInput);
-  const [isValid, setIsValid] = useState<boolean>(false);
   const [error, setError] = useState<string | null>("");
-  type CountrySelectItem = {
-    value: string;
-    label: string;
-    countryCode: string;
-    phoneLength: string;
-    calling_code?: string;
-    id: string;
+  const handlePhoneInputChange = (value: string) => {
+    setPhoneInput(value);
+    setError("");
   };
+  const handleOnChange = async (value: string) => {
+    if (value && originalCountries.hasOwnProperty(value)) {
+      const c = originalCountries[value];
+      console.log("selectedCountry", c);
+      setSelectedCountry({
+        value,
+        label: `${c.name} (${c.calling_code})`,
+        countryCode: value,
+        phoneLength: c.phone_length,
+        calling_code: c.calling_code,
+        id: c.id,
+      });
+      setPhoneInput("");
+      setError("");
+    } else {
+      setSelectedCountry(null);
+    }
+  };
+  const handleSubmit = async () => {
+    console.log("phoneInput", phoneInput);
+    const digits = phoneInput.replace(/\D/g, "");
+    if (digits.length >= Number(selectedCountry?.phoneLength || 10)) {
+      const payload = {
+        phone_number: Number(digits),
+        country_id: Number(selectedCountry?.id) || 3,
+      };
+      try {
+        if (!token) {
+          await login();
+        }
+        if (token && payload) {
+          // await postCountryCode(token, payload);
+          console.log("payload", payload);
+        }
+      } catch (error) {
+        console.log("error");
+      }
+    } else {
+      setError("Please enter a valid phone number");
+    }
+  };
+  //TODO this can be a for loop for better performance
   const countryData: Array<CountrySelectItem> = useMemo(
     () =>
       Object.entries(countries).map(([countryCode, country]) => ({
@@ -67,15 +75,8 @@ export default function App() {
       })),
     [countries],
   );
-  const [selectedItem, setSelectedItem] = useState<string | null>(null);
-  const combobox = useCombobox({
-    onDropdownClose: () => combobox.resetSelectedOption(),
-  });
-  console.log("selectedCountry", selectedCountry);
-
-  console.log("countryData", countryData);
   useEffect(() => {
-    (async () => {
+    const initialize = async () => {
       try {
         setError(null);
         if (!token) await login();
@@ -89,23 +90,45 @@ export default function App() {
           setError(err?.message ?? "Something went wrong");
         }
       }
-    })();
+    };
+    initialize();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
   return (
     <MantineProvider theme={theme}>
-      <Card shadow="sm" padding="lg" radius="md" withBorder>
+      <Card
+        shadow="sm"
+        padding="lg"
+        radius="md"
+        withBorder
+        style={{
+          backgroundColor: "#E5F4E3",
+          height: "20vh",
+          maxWidth: "400px",
+          padding: "2rem",
+        }}
+      >
         <Group>
-          <Popover width={300} position="bottom" withArrow shadow="md">
+          <Popover
+            width={300}
+            position="bottom"
+            withArrow
+            shadow="md"
+            trapFocus
+          >
             <Popover.Target>
               <Button
-                style={{ width: "100px", backgroundColor: "grey", padding: 0 }}
+                style={{
+                  width: "100px",
+                  backgroundColor: "#5DA9E9",
+                  padding: 0,
+                }}
               >
                 <FlagIcon
                   src={selectedCountry?.countryCode.toLowerCase() || "us"}
                 />
                 <p style={{ margin: "0 0 0 .5rem" }}>
-                  {selectedCountry?.calling_code}
+                  {selectedCountry?.calling_code || "+1"}
                 </p>
               </Button>
             </Popover.Target>
@@ -115,26 +138,9 @@ export default function App() {
                 placeholder="Pick value"
                 data={countryData}
                 searchable
-                onChange={(value) => {
-                  if (value && originalCountries.hasOwnProperty(value)) {
-                    const c = originalCountries[value];
-                    console.log("selectedCountry", c);
-                    setSelectedCountry({
-                      value,
-                      label: `${c.name} (${c.calling_code})`,
-                      countryCode: value,
-                      phoneLength: c.phone_length,
-                      calling_code: c.calling_code,
-                      id: c.id,
-                    });
-                    setPhoneInput("");
-                    setError("");
-                  } else {
-                    setSelectedCountry(null);
-                  }
-                }}
+                onChange={(value) => value && handleOnChange(value)}
                 renderOption={(item) => (
-                  <div>
+                  <div style={{ display: "flex", alignItems: "center" }}>
                     {
                       <FlagIcon
                         src={(
@@ -142,7 +148,7 @@ export default function App() {
                         ).countryCode.toLowerCase()}
                       />
                     }
-                    {item.option.label}
+                    <p style={{ margin: "0 0 0 .5rem" }}>{item.option.label}</p>
                   </div>
                 )}
               />
@@ -150,41 +156,16 @@ export default function App() {
           </Popover>
           <PhoneNumberInput
             value={phoneInput}
-            onChange={setPhoneInput}
+            onChange={handlePhoneInputChange}
             phone_length={Number(selectedCountry?.phoneLength) || 10}
-            placeholder={`(000) 000-${"0".repeat(Number(selectedCountry?.phoneLength) - 5)}`}
-            // setError={setError}
+            placeholder={`(000) 000-${"0".repeat(Number(selectedCountry?.phoneLength || 10) - 6)}`}
           />
         </Group>
         <Stack>
           <Text size="sm" color="red">
             {error}
           </Text>
-          <Button
-            onClick={async () => {
-              console.log("phoneInput", phoneInput);
-              const digits = phoneInput.replace(/\D/g, "");
-              if (digits.length >= Number(selectedCountry?.phoneLength)) {
-                const payload = {
-                  phone_number: Number(digits),
-                  country_id: Number(selectedCountry?.id),
-                };
-                try {
-                  if (!token) {
-                    await login();
-                  }
-                  if (token && payload) {
-                    // await postCountryCode(token, payload);
-                    console.log("payload", payload);
-                  }
-                } catch (error) {
-                  console.log("error");
-                }
-              } else {
-                setError("Please enter a valid phone number");
-              }
-            }}
-          >
+          <Button style={{ backgroundColor: "#5DA9E9" }} onClick={handleSubmit}>
             Submit
           </Button>
         </Stack>

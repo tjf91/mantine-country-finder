@@ -1,4 +1,5 @@
-import type { Country } from "../App";
+import { Country } from "../types";
+
 const authURL = import.meta.env.VITE_AUTH_URL;
 
 async function fetchCountries(token: string): Promise<Record<string, Country>> {
