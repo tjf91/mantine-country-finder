@@ -17,6 +17,7 @@ export default function App() {
     useState<CountrySelectItem | null>(null);
   const [phoneInput, setPhoneInput] = useState<string>("");
   const [error, setError] = useState<string | null>("");
+  const [loading, setLoading] = useState<boolean>(true);
   const handlePhoneInputChange = (value: string) => {
     setPhoneInput(value);
     setError("");
@@ -84,6 +85,7 @@ export default function App() {
           const data = await fetchCountries(token);
           setOriginalCountries(data);
           setCountries(data);
+          setLoading(false);
         }
       } catch (err: any) {
         if (err?.name !== "AbortError") {
@@ -95,80 +97,89 @@ export default function App() {
   }, [token]);
   return (
     <MantineProvider theme={theme}>
-      <Card
-        shadow="sm"
-        padding="lg"
-        radius="md"
-        withBorder
-        style={{
-          backgroundColor: "#E5F4E3",
-          height: "20vh",
-          maxWidth: "400px",
-          padding: "2rem",
-        }}
-      >
-        <Group>
-          <Popover
-            width={300}
-            position="bottom"
-            withArrow
-            shadow="md"
-            trapFocus
-          >
-            <Popover.Target>
-              <Button
-                style={{
-                  width: "100px",
-                  backgroundColor: "#5DA9E9",
-                  padding: 0,
-                }}
-              >
-                <FlagIcon
-                  src={selectedCountry?.countryCode.toLowerCase() || "us"}
+      {loading ? (
+        <Text>Loading...</Text>
+      ) : (
+        <Card
+          shadow="sm"
+          padding="lg"
+          radius="md"
+          withBorder
+          style={{
+            backgroundColor: "#E5F4E3",
+            height: "20vh",
+            maxWidth: "400px",
+            padding: "2rem",
+          }}
+        >
+          <Group>
+            <Popover
+              width={300}
+              position="bottom"
+              withArrow
+              shadow="md"
+              trapFocus
+            >
+              <Popover.Target>
+                <Button
+                  style={{
+                    width: "100px",
+                    backgroundColor: "#5DA9E9",
+                    padding: 0,
+                  }}
+                >
+                  <FlagIcon
+                    src={selectedCountry?.countryCode.toLowerCase() || "us"}
+                  />
+                  <p style={{ margin: "0 0 0 .5rem" }}>
+                    {selectedCountry?.calling_code || "+1"}
+                  </p>
+                </Button>
+              </Popover.Target>
+              <Popover.Dropdown>
+                <Select
+                  dropdownOpened={true}
+                  placeholder="Pick value"
+                  data={countryData}
+                  searchable
+                  onChange={(value) => value && handleOnChange(value)}
+                  renderOption={(item) => (
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      {
+                        <FlagIcon
+                          src={(
+                            item.option as CountrySelectItem
+                          ).countryCode.toLowerCase()}
+                        />
+                      }
+                      <p style={{ margin: "0 0 0 .5rem" }}>
+                        {item.option.label}
+                      </p>
+                    </div>
+                  )}
                 />
-                <p style={{ margin: "0 0 0 .5rem" }}>
-                  {selectedCountry?.calling_code || "+1"}
-                </p>
-              </Button>
-            </Popover.Target>
-            <Popover.Dropdown>
-              <Select
-                dropdownOpened={true}
-                placeholder="Pick value"
-                data={countryData}
-                searchable
-                onChange={(value) => value && handleOnChange(value)}
-                renderOption={(item) => (
-                  <div style={{ display: "flex", alignItems: "center" }}>
-                    {
-                      <FlagIcon
-                        src={(
-                          item.option as CountrySelectItem
-                        ).countryCode.toLowerCase()}
-                      />
-                    }
-                    <p style={{ margin: "0 0 0 .5rem" }}>{item.option.label}</p>
-                  </div>
-                )}
-              />
-            </Popover.Dropdown>
-          </Popover>
-          <PhoneNumberInput
-            value={phoneInput}
-            onChange={handlePhoneInputChange}
-            phone_length={Number(selectedCountry?.phoneLength) || 10}
-            placeholder={`(000) 000-${"0".repeat(Number(selectedCountry?.phoneLength || 10) - 6)}`}
-          />
-        </Group>
-        <Stack>
-          <Text size="sm" color="red">
-            {error}
-          </Text>
-          <Button style={{ backgroundColor: "#5DA9E9" }} onClick={handleSubmit}>
-            Submit
-          </Button>
-        </Stack>
-      </Card>
+              </Popover.Dropdown>
+            </Popover>
+            <PhoneNumberInput
+              value={phoneInput}
+              onChange={handlePhoneInputChange}
+              phone_length={Number(selectedCountry?.phoneLength) || 10}
+              placeholder={`(000) 000-${"0".repeat(Number(selectedCountry?.phoneLength || 10) - 6)}`}
+            />
+          </Group>
+          <Stack>
+            <Text size="sm" color="red">
+              {error}
+            </Text>
+            <Button
+              style={{ backgroundColor: "#5DA9E9" }}
+              onClick={handleSubmit}
+            >
+              Submit
+            </Button>
+          </Stack>
+        </Card>
+      )}
     </MantineProvider>
   );
 }
