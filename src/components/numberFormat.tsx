@@ -50,7 +50,7 @@ const PhoneNumberInput: React.FC<PhoneNumberInputProps> = ({
     val = formatPhoneNumber(val, group3Len);
     onChange(val);
   };
-  //format the phone number you see in the input
+  //format phone number you see in the input
   valueToFormat = formatPhoneNumber(valueToFormat, group3Len);
   return (
     <Input
@@ -58,7 +58,7 @@ const PhoneNumberInput: React.FC<PhoneNumberInputProps> = ({
       onChange={handleInputChange}
       placeholder={placeholder}
       ref={phoneInputRef}
-      style={{ width: "150px" }}
+      style={{ minWidth: "130px", maxWidth: "150px" }}
     />
   );
 };

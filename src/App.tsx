@@ -1,5 +1,13 @@
 import "@mantine/core/styles.css";
-import { Card, Group, MantineProvider, Select, Stack } from "@mantine/core";
+import {
+  Card,
+  Center,
+  Group,
+  MantineProvider,
+  Paper,
+  Select,
+  Stack,
+} from "@mantine/core";
 import { Button, Popover, Text } from "@mantine/core";
 import { theme } from "./theme";
 import { useEffect, useMemo, useState } from "react";
@@ -18,6 +26,26 @@ export default function App() {
   const [phoneInput, setPhoneInput] = useState<string>("");
   const [error, setError] = useState<string | null>("");
   const [loading, setLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    const initialize = async () => {
+      try {
+        setError(null);
+        if (!token) await login();
+        if (token && !Object.keys(originalCountries).length) {
+          const data = await fetchCountries(token);
+          setOriginalCountries(data);
+          setCountries(data);
+          setLoading(false);
+        }
+      } catch (err: any) {
+        if (err?.name !== "AbortError") {
+          setError(err?.message ?? "Something went wrong");
+        }
+      }
+    };
+    initialize();
+  }, [token]);
   const handlePhoneInputChange = (value: string) => {
     setPhoneInput(value);
     setError("");
@@ -41,9 +69,9 @@ export default function App() {
     }
   };
   const handleSubmit = async () => {
-    console.log("phoneInput", phoneInput);
     const digits = phoneInput.replace(/\D/g, "");
     if (digits.length >= Number(selectedCountry?.phoneLength || 10)) {
+      setLoading(true);
       const payload = {
         phone_number: Number(digits),
         country_id: Number(selectedCountry?.id) || 3,
@@ -55,9 +83,11 @@ export default function App() {
         if (token && payload) {
           await postCountryCode(token, payload);
         }
+        setLoading(false);
       } catch (error) {
         //TODO handle error
         console.log("error");
+        setLoading(false);
       }
     } else {
       setError("Please enter a valid phone number");
@@ -76,33 +106,20 @@ export default function App() {
       })),
     [countries],
   );
-  useEffect(() => {
-    const initialize = async () => {
-      try {
-        setError(null);
-        if (!token) await login();
-        if (token && !Object.keys(originalCountries).length) {
-          const data = await fetchCountries(token);
-          setOriginalCountries(data);
-          setCountries(data);
-          setLoading(false);
-        }
-      } catch (err: any) {
-        if (err?.name !== "AbortError") {
-          setError(err?.message ?? "Something went wrong");
-        }
-      }
-    };
-    initialize();
-  }, [token]);
+
   return (
     <MantineProvider theme={theme}>
-      {loading ? (
-        <Text>Loading...</Text>
-      ) : (
+      <Paper
+        withBorder
+        shadow="lg"
+        radius="xl"
+        p="lg"
+        w="100%"
+        maw={420}
+        miw={{ md: 350 }}
+      >
         <Card
           shadow="sm"
-          padding="lg"
           radius="md"
           withBorder
           style={{
@@ -110,76 +127,86 @@ export default function App() {
             height: "20vh",
             maxWidth: "400px",
             padding: "2rem",
+            minWidth: "300px",
           }}
         >
-          <Group>
-            <Popover
-              width={300}
-              position="bottom"
-              withArrow
-              shadow="md"
-              trapFocus
-            >
-              <Popover.Target>
-                <Button
-                  style={{
-                    width: "100px",
-                    backgroundColor: "#5DA9E9",
-                    padding: 0,
-                  }}
+          {loading ? (
+            <Center>
+              <Text>Loading...</Text>
+            </Center>
+          ) : (
+            <>
+              <Group>
+                <Popover
+                  width={300}
+                  position="bottom"
+                  withArrow
+                  shadow="md"
+                  trapFocus
                 >
-                  <FlagIcon
-                    src={selectedCountry?.countryCode.toLowerCase() || "us"}
-                  />
-                  <p style={{ margin: "0 0 0 .5rem" }}>
-                    {selectedCountry?.calling_code || "+1"}
-                  </p>
-                </Button>
-              </Popover.Target>
-              <Popover.Dropdown>
-                <Select
-                  dropdownOpened={true}
-                  placeholder="Pick value"
-                  data={countryData}
-                  searchable
-                  onChange={(value) => value && handleOnChange(value)}
-                  renderOption={(item) => (
-                    <div style={{ display: "flex", alignItems: "center" }}>
-                      {
-                        <FlagIcon
-                          src={(
-                            item.option as CountrySelectItem
-                          ).countryCode.toLowerCase()}
-                        />
-                      }
+                  <Popover.Target>
+                    <Button
+                      style={{
+                        width: "100px",
+                        backgroundColor: "#5DA9E9",
+                        padding: 0,
+                      }}
+                    >
+                      <FlagIcon
+                        src={selectedCountry?.countryCode.toLowerCase() || "us"}
+                      />
                       <p style={{ margin: "0 0 0 .5rem" }}>
-                        {item.option.label}
+                        {selectedCountry?.calling_code || "+1"}
                       </p>
-                    </div>
-                  )}
+                    </Button>
+                  </Popover.Target>
+                  <Popover.Dropdown>
+                    <Select
+                      dropdownOpened={true}
+                      placeholder="Pick value"
+                      data={countryData}
+                      searchable
+                      onChange={(value) => value && handleOnChange(value)}
+                      renderOption={(item) => (
+                        <div style={{ display: "flex", alignItems: "center" }}>
+                          {
+                            <FlagIcon
+                              src={(
+                                item.option as CountrySelectItem
+                              ).countryCode.toLowerCase()}
+                            />
+                          }
+                          <p style={{ margin: "0 0 0 .5rem" }}>
+                            {item.option.label}
+                          </p>
+                        </div>
+                      )}
+                    />
+                  </Popover.Dropdown>
+                </Popover>
+                <PhoneNumberInput
+                  value={phoneInput}
+                  onChange={handlePhoneInputChange}
+                  phone_length={Number(selectedCountry?.phoneLength) || 10}
+                  placeholder={`(000) 000-${"0".repeat(Number(selectedCountry?.phoneLength || 10) - 6)}`}
                 />
-              </Popover.Dropdown>
-            </Popover>
-            <PhoneNumberInput
-              value={phoneInput}
-              onChange={handlePhoneInputChange}
-              phone_length={Number(selectedCountry?.phoneLength) || 10}
-              placeholder={`(000) 000-${"0".repeat(Number(selectedCountry?.phoneLength || 10) - 6)}`}
-            />
-          </Group>
-          <Stack>
-            <Text size="sm" color="red">
-              {error}
-            </Text>
-            <Button
-              style={{ backgroundColor: "#5DA9E9" }}
-              onClick={handleSubmit}
-            >
-              Submit
-            </Button>
-          </Stack>
+              </Group>
+
+              <Stack>
+                <Text size="sm" color="red">
+                  {error}
+                </Text>
+                <Button
+                  style={{ backgroundColor: "#5DA9E9" }}
+                  onClick={handleSubmit}
+                >
+                  Submit
+                </Button>
+              </Stack>
+            </>
+          )}
         </Card>
-      )}
+      </Paper>
     </MantineProvider>
   );
 }
