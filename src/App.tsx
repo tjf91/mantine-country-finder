@@ -4,7 +4,7 @@ import { Button, Popover, Text } from "@mantine/core";
 import { theme } from "./theme";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "./hooks/useAuth";
-import { fetchCountries } from "./services/countries";
+import { fetchCountries, postCountryCode } from "./services/countries";
 import FlagIcon from "./components/flagIcon";
 import PhoneNumberInput from "./components/numberFormat";
 import { CountryMap, CountrySelectItem } from "./types";
@@ -52,10 +52,10 @@ export default function App() {
           await login();
         }
         if (token && payload) {
-          // await postCountryCode(token, payload);
-          console.log("payload", payload);
+          await postCountryCode(token, payload);
         }
       } catch (error) {
+        //TODO handle error
         console.log("error");
       }
     } else {
@@ -92,7 +92,6 @@ export default function App() {
       }
     };
     initialize();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
   return (
     <MantineProvider theme={theme}>
